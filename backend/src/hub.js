@@ -31,7 +31,7 @@ async function raw(method, path, { token, body, timeoutMs = 30_000 } = {}) {
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch (e) {
-    throw new HttpError(502, e?.name === 'AbortError' ? 'O Hub demorou demais para responder' : 'Não foi possível falar com o Hub');
+    throw new HttpError(424, e?.name === 'AbortError' ? 'O Hub demorou demais para responder' : 'Não foi possível falar com o Hub');
   } finally {
     clearTimeout(timer);
   }
@@ -49,11 +49,11 @@ async function raw(method, path, { token, body, timeoutMs = 30_000 } = {}) {
 export async function connectHub(username, password, otp) {
   const r = await raw('POST', '/auth/login', { body: { username, password, ...(otp ? { otp } : {}) } });
   if (!r.ok) {
-    const err = new HttpError(r.status === 401 || r.status === 403 ? 400 : 502, r.data.error || 'Falha no login do Hub');
+    const err = new HttpError(r.status === 401 || r.status === 403 ? 400 : 424, r.data.error || 'Falha no login do Hub');
     err.otpRequired = !!r.data.otpRequired;
     throw err;
   }
-  if (!r.data.token) throw new HttpError(502, 'O Hub não devolveu o token de sessão');
+  if (!r.data.token) throw new HttpError(424, 'O Hub não devolveu o token de sessão');
   if (r.data.role !== 'admin') throw new HttpError(400, 'Use um usuário administrador do Hub');
   await setSecret('hub:token', r.data.token);
   const now = new Date();
@@ -88,7 +88,7 @@ export async function hub(method, path, body, opts = {}) {
     await setSetting('hub:meta', JSON.stringify({ ...meta, expiresAt: null, lastError: 'A sessão no Hub expirou' }));
     throw new HttpError(409, 'A sessão no Hub expirou. Conecte de novo em Configurações.');
   }
-  if (!r.ok) throw new HttpError(r.status >= 500 ? 502 : 400, r.data.error || r.data.stderr || `Hub respondeu ${r.status}`);
+  if (!r.ok) throw new HttpError(r.status >= 500 ? 424 : 400, r.data.error || r.data.stderr || `Hub respondeu ${r.status}`);
   return r.data;
 }
 
@@ -128,7 +128,7 @@ export async function containerAction(name, action, opts) {
 
 /** Resumo do servidor: métricas, máquina, temperatura, backup e containers. */
 export async function serverSnapshot() {
-  const settle = (p) => p.then((v) => v, (e) => ({ error: e.message }));
+  const settle = (p) => p.then((v) => v, (e) => ({ error: e.message, status: e.status }));
   const [stats, overview, temperature, backup, ops] = await Promise.all([
     settle(hub('GET', '/wsl/stats')),
     settle(hub('GET', '/system/overview', undefined, { timeoutMs: 45_000 })),
@@ -136,6 +136,6 @@ export async function serverSnapshot() {
     settle(hub('GET', '/system/backup-status')),
     settle(hub('GET', '/ops/status')),
   ]);
-  if (stats.error && overview.error) throw new HttpError(502, stats.error);
+  if (stats.error && overview.error) throw new HttpError(stats.status || 424, stats.error);
   return { stats, overview, temperature, backup, containers: ops.containers || [], containersError: ops.error, at: new Date().toISOString() };
 }

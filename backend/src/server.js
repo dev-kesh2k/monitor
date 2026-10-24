@@ -23,7 +23,7 @@ app.use((err, _req, res, _next) => {
   if (err?.code === 'P2025') return res.status(404).json({ error: 'Registro não encontrado' });
   if (err?.code === 'P2002') return res.status(409).json({ error: 'Registro duplicado' });
   const status = err instanceof HttpError ? err.status : err.status || 500;
-  if (status >= 500 && status !== 502) console.error(err);
+  if (status >= 500) console.error(err);
   res.status(status).json({ error: status >= 500 && !(err instanceof HttpError) ? 'Erro interno' : err.message });
 });
 
