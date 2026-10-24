@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+html,
+body {
+  overflow-x: hidden;
+  background: #f4f6fb;
+  color: #0f172a;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-[#e8ecf4] bg-white shadow-[0_2px_10px_rgba(15,23,42,0.04)];
+  }
+  .btn-primary {
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-brand px-4 text-base font-semibold text-white shadow-[0_6px_16px_rgba(79,70,229,0.28)] transition active:scale-[0.98] disabled:opacity-50;
+  }
+  .btn-outline {
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[#e2e8f0] bg-white px-4 text-base font-semibold text-[#0f172a] transition active:scale-[0.98] disabled:opacity-50;
+  }
+  .btn-danger {
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-[#dc2626] px-4 text-base font-semibold text-white transition active:scale-[0.98] disabled:opacity-50;
+  }
+  .icon-btn {
+    @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#0f172a] transition hover:bg-[#eef2f8] active:scale-95;
+  }
+  .input {
+    @apply min-h-[44px] w-full rounded-xl border border-[#e2e8f0] bg-white px-4 py-2.5 text-base outline-none transition placeholder:text-[#94a3b8] focus:border-brand focus:ring-2 focus:ring-brand/15;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-semibold text-[#0f172a];
+  }
+  .chip {
+    @apply min-h-[36px] shrink-0 rounded-full border px-3 text-sm font-semibold transition;
+  }
+  .mono {
+    @apply font-mono text-[13px] leading-relaxed;
+  }
+}

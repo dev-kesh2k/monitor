@@ -1,0 +1,89 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("admin")
+  createdAt    DateTime @default(now())
+
+  conversations Conversation[]
+  commands      CommandLog[]
+}
+
+/// Configurações chave/valor; valores secretos ficam cifrados (AES-256-GCM com chave derivada do JWT_SECRET).
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+/// Amostra de métricas do servidor (uma por minuto, coletada do Hub).
+model MetricSample {
+  id         Int      @id @default(autoincrement())
+  bucket     Int      @unique
+  at         DateTime @default(now())
+  cpu        Float
+  memPercent Float
+  memUsedGB  Float
+  diskPercent Float
+  tempC      Float?
+  load1      Float?
+  containers Int      @default(0)
+
+  @@index([at])
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String   @default("Nova conversa")
+  /// idle | running | awaiting_approval | error
+  status    String   @default("idle")
+  error     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages Message[]
+
+  @@index([userId, updatedAt])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  /// user | assistant
+  role           String
+  /// Blocos de conteúdo no formato da API da Anthropic (JSON)
+  content        Json
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+model CommandLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /// terminal | agent | service | container
+  source     String
+  command    String
+  exitCode   Int
+  stdout     String
+  stderr     String
+  durationMs Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}
